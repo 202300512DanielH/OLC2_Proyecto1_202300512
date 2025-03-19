@@ -1,5 +1,6 @@
 
 using analyzer;
+using Microsoft.AspNetCore.Mvc;
 
 public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>
 {
@@ -364,6 +365,14 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>
         // }
 
         return invocable.Invoke(arguments, this);
+    }
+
+    //VisitFuncDcl
+    public override ValueWrapper VisitFuncDcl(LanguageParser.FuncDclContext context)
+    {
+        var foreign = new ForeignFuntion(currentEnviroment, context);
+        currentEnviroment.SetVariable(context.ID().GetText(), new FuntionValue(foreign, context.ID().GetText()), context.Start);
+        return defaultValue;
     }
 
 }

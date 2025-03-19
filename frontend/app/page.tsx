@@ -8,6 +8,7 @@ const API_URL = 'http://localhost:5087';
 export default function IDE() {
   const [code, setCode] = useState('');
   const [output, setOutput] = useState('');
+  const [error, setError] = useState<string>('');
 
   // Crear archivo
   const handleCreateFile = () => {
@@ -39,19 +40,30 @@ export default function IDE() {
   };
 
   // Ejecutar código
-  const handleExecute = () => {
-    fetch(`${API_URL}/compile`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
-    })
-      .then((response) => response.json())
-      .then((data) => setOutput(data.result || 'Sin salida'))
-      .catch((error) => {
-        console.error('Error:', error);
-        setOutput('Error en la ejecución.');
+  const handleExecute = async () => {
+    try {
+      const response = await fetch(`${API_URL}/compile`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code }),
       });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error desconocido');
+      }
+
+      setOutput(data.result);
+      setError('');
+    } catch (err) {
+      setOutput('');
+      setError(err instanceof Error ? err.message : 'Error desconocido');
+    }
   };
+  
 
   return (
     <div className="min-h-screen bg-black text-[#0ff] flex flex-col font-mono">
@@ -89,14 +101,6 @@ export default function IDE() {
           💾 Guardar
         </button>
 
-        {/* Botón de Errores */}
-        <button
-          className="orange-button animate-slide-in"
-          style={{ animationDelay: '0.4s' }}
-        >
-          ❌ Errores
-        </button>
-
         {/* Botón de Tabla de Símbolos */}
         <button
           className="orange-button animate-slide-in"
@@ -123,6 +127,22 @@ export default function IDE() {
         </button>
       </div>
 
+              {/* Panel de Errores - Ahora arriba */}
+              {error && (
+          <div className="error-panel">
+            <div className="flex justify-between items-center">
+              <h2 className="font-bold text-lg"> Error:</h2>
+              <button
+                onClick={() => setError('')}
+                className="close-button"
+              >
+                ✖️
+              </button>
+            </div>
+            <pre className="whitespace-pre-wrap break-words">{error}</pre>
+          </div>
+        )}
+
       {/* Área principal */}
       <div className="flex flex-1">
         {/* Editor */}
@@ -142,6 +162,7 @@ export default function IDE() {
           />
         </div>
 
+
         {/* Consola */}
         <div className="w-1/2 p-4">
           <h2 className="text-lg font-bold mb-2 text-[#00ffcc]">
@@ -155,11 +176,49 @@ export default function IDE() {
               {output}
             </pre>
           </div>
+
+
+
         </div>
       </div>
 
+
       {/* Estilos personalizados */}
       <style jsx>{`
+
+      .error-panel {
+        background-color: #ff3333;
+        color: #fff;
+        padding: 16px;
+        border-radius: 8px;
+        box-shadow: 0 0 15px #ff0000;
+        margin-top: 16px;
+        animation: slide-in 0.3s ease-out;
+      }
+
+      .close-button {
+        background-color: transparent;
+        color: #fff;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+
+      .close-button:hover {
+        transform: scale(1.2);
+        color: #ffcccc;
+      }
+
+      @keyframes slide-in {
+        0% {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
         .yellow-button {
           background-color: #ffcc00;
           color: #000;

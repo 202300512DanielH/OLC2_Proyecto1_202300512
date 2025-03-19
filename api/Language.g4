@@ -35,3 +35,6 @@ STRING: '"' .*? '"';
 
 WS: [ \t\r\n]+ -> skip;
 ID: [a-zA-Z]+;
+
+COMMENT: '//' ~[\r\n]* -> skip;
+ML_COMMENT: '/*' .*? '*/' -> skip;

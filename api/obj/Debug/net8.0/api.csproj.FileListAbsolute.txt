@@ -32,3 +32,4 @@
 /home/daniel/Documentos/Compiladores 2/Proyecto1/api/obj/Debug/net8.0/api.pdb
 /home/daniel/Documentos/Compiladores 2/Proyecto1/api/obj/Debug/net8.0/api.genruntimeconfig.cache
 /home/daniel/Documentos/Compiladores 2/Proyecto1/api/obj/Debug/net8.0/ref/api.dll
+/home/daniel/Documentos/Compiladores 2/Proyecto1/api/obj/Debug/net8.0/api.sourcelink.json

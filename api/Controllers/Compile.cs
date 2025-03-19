@@ -6,9 +6,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using analyzer;
 using Antlr4.Runtime;
+using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+
 
 namespace api.Controllers
 {
@@ -39,15 +41,31 @@ namespace api.Controllers
 
             var inputStream = new AntlrInputStream(request.code);
             var lexer = new LanguageLexer(inputStream);
+
+            //Vamos a quitar los listeners default de ANTLR y crear uno propio
+            lexer.RemoveErrorListeners();
+            lexer.AddErrorListener(new LexicalErrorListener());
+
             var tokens = new CommonTokenStream(lexer);
             var parser = new LanguageParser(tokens);
 
-            var tree = parser.program();
+            //Hacemos lo mismo con el parser 
+            parser.RemoveErrorListeners();
+            parser.AddErrorListener(new SyntaxErrorListener());
 
-            var visitor = new CompilerVisitor();
-            visitor.Visit(tree);
+            try{
+                var tree = parser.program();
+                var visitor = new CompilerVisitor();
+                visitor.Visit(tree);
 
             return Ok(new { result = visitor.output });
+            }
+            catch(ParseCanceledException ex){
+                return BadRequest (new {error= ex.Message});
+            }
+            catch(SemanticError ex){
+                return BadRequest(new {error = ex.Message});
+            }
 
         }
 

@@ -25,7 +25,7 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>
     {
         string id = context.ID().GetText();
         ValueWrapper value = Visit(context.expr());
-        currentEnviroment.SetVariable(id, value);
+        currentEnviroment.SetVariable(id, value, context.Start);
         return defaultValue;
         
     }
@@ -36,7 +36,7 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>
     {
         string id = context.ID().GetText();
         ValueWrapper value = Visit(context.expr());
-        return currentEnviroment.AssignVariable(id, value);
+        return currentEnviroment.AssignVariable(id, value, context.Start);
     }
 
     //VisitExprStmt
@@ -55,7 +55,7 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>
             FloatValue f => f.Value.ToString(),
             StringValue s => s.Value,
             BoolValue b => b.Value.ToString(),
-            _ => throw new System.Exception("Invalid operation")
+            _ => throw new SemanticError("Tipo no reconocido", context.Start)
         };
         output += "\n";
         return defaultValue;
@@ -77,7 +77,7 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>
         {
             IntValue i => new IntValue(-i.Value),
             FloatValue f => new FloatValue(-f.Value),
-            _ => throw new System.Exception("Invalid operation")
+            _ => throw new SemanticError("Tipo invalido", context.Start)
         };
     }
 
@@ -104,7 +104,7 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>
             (FloatValue l, IntValue r, "/") => new FloatValue(l.Value / r.Value),
             (FloatValue l, FloatValue r, "*") => new FloatValue(l.Value * r.Value),
             (FloatValue l, FloatValue r, "/") => new FloatValue(l.Value / r.Value),
-            _ => throw new System.Exception("Invalid operation")
+            _ => throw new SemanticError("Operacion Invalida", context.Start)
         };
     }
 
@@ -125,7 +125,7 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>
             (FloatValue l, IntValue r, "-") => new FloatValue(l.Value - r.Value),
             (FloatValue l, FloatValue r, "+") => new FloatValue(l.Value + r.Value),
             (FloatValue l, FloatValue r, "-") => new FloatValue(l.Value - r.Value),
-            _ => throw new System.Exception("Invalid operation")
+            _ => throw new SemanticError("Operacion Invalida", context.Start)
         };
     }
 
@@ -133,7 +133,7 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>
     public override ValueWrapper VisitIdentifier(LanguageParser.IdentifierContext context)
     {
         string id = context.ID().GetText();
-        return currentEnviroment.GetVariable(id);
+        return currentEnviroment.GetVariable(id, context.Start);
     }
 
     //VisitFloat
@@ -175,7 +175,7 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>
             (FloatValue l, FloatValue r, ">=") => new BoolValue(l.Value >= r.Value),
             (FloatValue l, FloatValue r, "==") => new BoolValue(l.Value == r.Value),
             (FloatValue l, FloatValue r, "!=") => new BoolValue(l.Value != r.Value),
-            _ => throw new System.Exception("Invalid operation")
+            _ => throw new SemanticError("Operacion Invalida", context.Start)
         };
     }
 
@@ -196,7 +196,7 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>
             (BoolValue l, BoolValue r, "!=") => new BoolValue(l.Value != r.Value),
             (StringValue l, StringValue r, "==") => new BoolValue(l.Value == r.Value),
             (StringValue l, StringValue r, "!=") => new BoolValue(l.Value != r.Value),
-            _ => throw new System.Exception("Invalid operation")
+            _ => throw new SemanticError("Operacion Invalida", context.Start)
         };
     }
 
@@ -220,7 +220,7 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>
         ValueWrapper condition = Visit(context.expr());
         if (condition is not BoolValue)
         {
-            throw new System.Exception("Invalid condition");
+            throw new SemanticError("Condicion Invalida", context.Start);
         }
         if((condition as BoolValue).Value)
         {
@@ -240,7 +240,7 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>
         ValueWrapper condition = Visit(context.expr());
         if (condition is not BoolValue)
         {
-            throw new System.Exception("Invalid condition");
+            throw new SemanticError("Condicion Invalida", context.Start);
         }
         while((condition as BoolValue).Value)
         {
@@ -248,7 +248,7 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>
             condition = Visit(context.expr());
             if (condition is not BoolValue)
             {
-                throw new System.Exception("Invalid condition");
+                throw new SemanticError("Condicion Invalida", context.Start);
             }
         }
         return defaultValue;

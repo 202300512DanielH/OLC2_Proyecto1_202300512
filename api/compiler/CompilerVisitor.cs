@@ -3,11 +3,15 @@ using analyzer;
 
 public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>
 {
-    private ValueWrapper defaultValue = new VoidValue();
-
-
+    public ValueWrapper defaultValue = new VoidValue();
     public string output = "";
-    private Environment currentEnviroment = new Environment(null);
+    public Environment currentEnviroment;
+
+    public CompilerVisitor()
+    {
+        currentEnviroment = new Environment(null);
+        Embeded.Generate(currentEnviroment);
+    }
 
 
     //VisitProgram
@@ -46,20 +50,21 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>
     }
 
     //VisitPrintStmt
-    public override ValueWrapper VisitPrintStmt(LanguageParser.PrintStmtContext context)
-    {
-        ValueWrapper value = Visit(context.expr());
-        output += value switch
-        {
-            IntValue i => i.Value.ToString(),
-            FloatValue f => f.Value.ToString(),
-            StringValue s => s.Value,
-            BoolValue b => b.Value.ToString(),
-            _ => throw new SemanticError("Tipo no reconocido", context.Start)
-        };
-        output += "\n";
-        return defaultValue;
-    }
+    // public override ValueWrapper VisitPrintStmt(LanguageParser.PrintStmtContext context)
+    // {
+    //     ValueWrapper value = Visit(context.expr());
+    //     output += value switch
+    //     {
+    //         IntValue i => i.Value.ToString(),
+    //         FloatValue f => f.Value.ToString(),
+    //         StringValue s => s.Value,
+    //         BoolValue b => b.Value.ToString(),
+    //         FuntionValue fn => "<fn "+fn.name+">",
+    //         _ => throw new SemanticError("Tipo no reconocido", context.Start)
+    //     };
+    //     output += "\n";
+    //     return defaultValue;
+    // }
 
 
     //VisitParentheses
@@ -252,6 +257,113 @@ public class CompilerVisitor : LanguageBaseVisitor<ValueWrapper>
             }
         }
         return defaultValue;
+    }
+
+    //VisitForStmt
+
+    public override ValueWrapper VisitForStmt(LanguageParser.ForStmtContext context)
+    {
+        Environment previousEnvironment = currentEnviroment;
+        currentEnviroment = new Environment(previousEnvironment);
+
+        Visit(context.forInit());
+
+        VisitForBody(context);
+
+        currentEnviroment = previousEnvironment;
+        return defaultValue;
+    }
+
+    public void VisitForBody(LanguageParser.ForStmtContext context)
+    {
+        ValueWrapper condition = Visit(context.expr(0));
+
+        var lastEnvirontment = currentEnviroment;
+
+        if (condition is not BoolValue)
+        {
+            throw new SemanticError("Condicion Invalida", context.Start);
+        }
+        try
+        {
+            while ((condition as BoolValue).Value)
+            {
+                Visit(context.stmt());
+                Visit(context.expr(1));
+                condition = Visit(context.expr(0));
+            }
+        }
+        catch (BreakException)
+        {
+            currentEnviroment = lastEnvirontment;
+        }
+        catch (ContinueException)
+        {
+            currentEnviroment = lastEnvirontment;
+            Visit(context.expr(1));
+            VisitForBody(context);
+        }
+    }
+
+
+    //VisitBreakStmt
+    public override ValueWrapper VisitBreakStmt(LanguageParser.BreakStmtContext context)
+    {
+        throw new BreakException();
+    }
+    //VisitContinueStmt
+    public override ValueWrapper VisitContinueStmt(LanguageParser.ContinueStmtContext context)
+    {
+        throw new ContinueException();
+    }
+    //VisitReturnStmt
+    public override ValueWrapper VisitReturnStmt(LanguageParser.ReturnStmtContext context)
+    {
+        ValueWrapper? value = defaultValue;
+
+        if (context.expr() != null)
+        {
+            value = Visit(context.expr());
+        }
+
+        throw new ReturnException(value);
+    }
+
+
+    //VisitCallee
+    public override ValueWrapper VisitCallee(LanguageParser.CalleeContext context)
+    {
+        ValueWrapper callee = Visit(context.expr());
+
+        foreach(var call in context.call())
+        {
+            if(callee is FuntionValue funtionValue){
+                callee = VisitCall(funtionValue.invocable, call.args());
+            }
+            else{
+                throw new SemanticError("No es una funcion", context.Start);
+            }
+        }
+        return callee;
+    }
+
+    public ValueWrapper VisitCall(Invocable invocable, LanguageParser.ArgsContext context)
+    {
+        List<ValueWrapper> arguments = new List<ValueWrapper>();
+        if(context != null)
+        {
+            foreach(var expr in context.expr())
+            {
+                arguments.Add(Visit(expr));
+            }
+        }
+
+        // if(context != null && arguments.Count != invocable.Arity())
+        // {
+        //     throw new SemanticError("Numero de argumentos incorrecto", context.Start);
+        // }
+
+        return invocable.Invoke(arguments, this);
     }
 
 }

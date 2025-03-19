@@ -8,13 +8,19 @@ varDcl: 'var' ID '=' expr ';';
 
 stmt: 
 	expr ';' # ExprStmt 
-	| 'print(' expr ')' ';' # PrintStmt
 	| '{' dcl* '}' # BlockStmt
 	| 'if' '(' expr ')' stmt ('else' stmt)? # IfStmt
-	| 'while' '(' expr ')' stmt # WhileStmt;
+	| 'while' '(' expr ')' stmt # WhileStmt
+	| 'for' '(' forInit expr ';' expr ')' stmt	# ForStmt
+	| 'break' ';' # BreakStmt
+	| 'continue' ';' # ContinueStmt
+	| 'return' expr? ';' # ReturnStmt;
+
+forInit: varDcl | expr ';';
 
 expr:
 	'-' expr						# Negate
+	| expr call+ 				# Callee
 	| expr op = ('*' | '/') expr	# MulDiv
 	| expr op = ('+' | '-') expr	# AddSub
 	| expr op = ('>' | '<' | '>=' | '<=' ) expr # Relational
@@ -27,6 +33,10 @@ expr:
 	| INT							# Int 
 	| ID							# Identifier
 	| '(' expr ')'					# Parens;
+
+call: '(' args? ')';
+args: expr (',' expr)*;
+
 
 INT: [0-9]+;
 BOOL: 'true' | 'false';

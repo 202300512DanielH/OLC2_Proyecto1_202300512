@@ -67,6 +67,12 @@ namespace api.Controllers
                 return BadRequest(new {error = ex.Message});
             }
 
+            catch(ContinueException ex){
+                return BadRequest(new {error = "Haz usado un continue fuera de un ciclo"});
+            }
+            catch(BreakException ex){
+                return BadRequest(new {error = "Haz usado un break fuera de un ciclo"});
+            }
         }
 
     }
